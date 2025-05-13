@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playfair Cipher</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            margin: auto;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Playfair Cipher Web App</h2>
+
+        <label for="key">Enter Key:</label>
+        <input type="text" id="key" placeholder="Enter key (e.g., Monarchy)">
+
+        <label for="text">Enter Text:</label>
+        <input type="text" id="text" placeholder="Enter plain/cipher text">
+
+        <button onclick="encryptText()">Encrypt</button>
+        <button onclick="decryptText()">Decrypt</button>
+
+        <div class="output">
+            <p><strong>Result:</strong> <span id="result"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Function to remove spaces and convert to lowercase
+        function cleanText(text) {
+            return text.replace(/\s+/g, '').toLowerCase();
+        }
+
+        // Function to generate the 5x5 key table
+        function generateKeyTable(key) {
+            let keyT = new Array(5).fill(null).map(() => new Array(5).fill(''));
+            let dicty = {};
+            for (let i = 0; i < 26; i++) {
+                dicty[String.fromCharCode(i + 97)] = 0;
+            }
+            key = cleanText(key.replace('j', 'i'));
+            let i = 0, j = 0;
+            for (let char of key) {
+                if (dicty[char] === 0) {
+                    dicty[char] = 1;
+                    keyT[i][j] = char;
+                    j = (j + 1) % 5;
+                    if (j === 0) i++;
+                }
+            }
+            for (let k = 0; k < 26; k++) {
+                let char = String.fromCharCode(k + 97);
+                if (char !== 'j' && dicty[char] === 0) {
+                    keyT[i][j] = char;
+                    j = (j + 1) % 5;
+                    if (j === 0) i++;
+                }
+            }
+            return keyT;
+        }
+
+        // Function to find the positions of characters in the key table
+        function searchKeyTable(keyT, a, b) {
+            let pos = [];
+            if (a === 'j') a = 'i';
+            if (b === 'j') b = 'i';
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 5; j++) {
+                    if (keyT[i][j] === a) pos[0] = [i, j];
+                    if (keyT[i][j] === b) pos[1] = [i, j];
+                }
+            }
+            return pos;
+        }
+
+        // Function to encrypt text
+        function encrypt(text, keyT) {
+            let result = "";
+            text = cleanText(text);
+            if (text.length % 2 !== 0) text += 'x';
+            for (let i = 0; i < text.length; i += 2) {
+                let [[r1, c1], [r2, c2]] = searchKeyTable(keyT, text[i], text[i + 1]);
+                if (r1 === r2) {
+                    result += keyT[r1][(c1 + 1) % 5] + keyT[r2][(c2 + 1) % 5];
+                } else if (c1 === c2) {
+                    result += keyT[(r1 + 1) % 5][c1] + keyT[(r2 + 1) % 5][c2];
+                } else {
+                    result += keyT[r1][c2] + keyT[r2][c1];
+                }
+            }
+            return result;
+        }
+
+        // Function to decrypt text
+        function decrypt(text, keyT) {
+            let result = "";
+            text = cleanText(text);
+            for (let i = 0; i < text.length; i += 2) {
+                let [[r1, c1], [r2, c2]] = searchKeyTable(keyT, text[i], text[i + 1]);
+                if (r1 === r2) {
+                    result += keyT[r1][(c1 + 4) % 5] + keyT[r2][(c2 + 4) % 5];
+                } else if (c1 === c2) {
+                    result += keyT[(r1 + 4) % 5][c1] + keyT[(r2 + 4) % 5][c2];
+                } else {
+                    result += keyT[r1][c2] + keyT[r2][c1];
+                }
+            }
+            return result;
+        }
+
+        // Encrypt button function
+        function encryptText() {
+            let key = document.getElementById("key").value;
+            let text = document.getElementById("text").value;
+            if (key === "" || text === "") {
+                alert("Please enter both key and text.");
+                return;
+            }
+            let keyT = generateKeyTable(key);
+            let encryptedText = encrypt(text, keyT);
+            document.getElementById("result").innerText = encryptedText;
+        }
+
+        // Decrypt button function
+        function decryptText() {
+            let key = document.getElementById("key").value;
+            let text = document.getElementById("text").value;
+            if (key === "" || text === "") {
+                alert("Please enter both key and text.");
+                return;
+            }
+            let keyT = generateKeyTable(key);
+            let decryptedText = decrypt(text, keyT);
+            document.getElementById("result").innerText = decryptedText;
+        }
+    </script>
+
+</body>
+</html>
